@@ -1,46 +1,105 @@
-
 void testAnalisi(){
 
     TFile *f = new TFile("test.root");
 
-    TTree *tTracks  = (TTree*)f->Get("tracks");
-    TTree *tHits    = (TTree*)f->Get("hits");
-    TTree *tCalo    =  (TTree*)f->Get("calo");
+    TTree *trTracks  = (TTree*)f->Get("tracks");
+    TTree *trHits    = (TTree*)f->Get("hits");
+    TTree *trCalo    =  (TTree*)f->Get("calo");
+
+
+    // Get n events, max tracks/hits/calo
 
     int eventID, nTracks, nHits, nParticles;
-    tTracks->SetBranchAddress("eventID", &eventID);
-    tTracks->SetBranchAddress("nTracks", &nTracks);
-    tHits->SetBranchAddress("nHits", &nHits);
-    tCalo->SetBranchAddress("nParticles", &nParticles);
+    trTracks->SetBranchAddress("eventID", &eventID);
+    trTracks->SetBranchAddress("nTracks", &nTracks);
+    trHits->SetBranchAddress("nHits", &nHits);
+    trCalo->SetBranchAddress("nParticles", &nParticles);
 
+    int nEvents = trTracks->GetEntries();
     int maxTracks = 0;
     int maxHits = 0;
     int maxParticles = 0;
 
-    for (int i=0; i<tTracks->GetEntries(); i++){
-        tTracks->GetEvent(i);
-        if(nTracks>maxTracks)           maxTracks = nTracks;
-        if(nHits>maxHits)               maxHits = nHits;
-        if(nParticles>maxParticles)     maxParticles = nParticles;
+    for (int i=0; i<nEvents; i++){
+        trTracks->GetEvent(i);
+        trHits->GetEvent(i);
+        trCalo->GetEvent(i);
+        if(nTracks > maxTracks)           maxTracks = nTracks;
+        if(nHits > maxHits)               maxHits = nHits;
+        if(nParticles > maxParticles)     maxParticles = nParticles;
     }
 
-    vector<int> PDG, parentPDG, trackID;
+    // Matching variables
 
-    PDG.resize(maxTracks);
-    parentPDG.resize(maxTracks);
-    trackID.resize(maxTracks);
+    // Tracks variables
 
-    tTracks->SetBranchAddress("PDG", &(PDG[0]));
-    tTracks->SetBranchAddress("parentPDG", &(parentPDG[0]));
-    tTracks->SetBranchAddress("trackID", &(trackID[0]));
+    vector<int> tPDG, tParentPDG, tTrackID;
+    vector<double> tKinEnergy;
 
-    for (int i=0; i<tTracks->GetEntries(); i++){
-        tTracks->GetEvent(i);
-        cout<<"evt "<<eventID<<", nTracks "<<nTracks<<endl<<endl;
+    tPDG.resize(maxTracks);
+    tParentPDG.resize(maxTracks);
+    tTrackID.resize(maxTracks);
+    tKinEnergy.resize(maxTracks);
+
+    trTracks->SetBranchAddress("tPDG", &(tPDG[0]));
+    trTracks->SetBranchAddress("tParentPDG", &(tParentPDG[0]));
+    trTracks->SetBranchAddress("tTrackID", &(tTrackID[0]));
+    trTracks->SetBranchAddress("tKinEnergy", &(tKinEnergy[0]));
+
+    // Hits variables
+
+    vector<int> hPDG, hTrackID;
+    vector<double> hEnergy;
+
+    hPDG.resize(maxHits);
+    hTrackID.resize(maxHits);
+    hEnergy.resize(maxHits);
+
+    trHits->SetBranchAddress("hPDG", &(hPDG[0]));
+    trHits->SetBranchAddress("hTrackID", &(hTrackID[0]));
+    trHits->SetBranchAddress("hEnergy", &(hEnergy[0]));
+
+    // Calo variables
+
+    float cTotalEnergy;
+    vector<double> cEnergy, cEloss, cPartnum, cParent;
+
+    cEnergy.resize(maxParticles);
+    cEloss.resize(maxParticles);
+    cPartnum.resize(maxParticles);
+    cParent.resize(maxParticles);
+
+    trCalo->SetBranchAddress("cTotalEnergy", &cTotalEnergy);
+    trCalo->SetBranchAddress("cEnergy", &(cEnergy[0]));
+    trCalo->SetBranchAddress("cEloss", &(cEloss[0]));
+    trCalo->SetBranchAddress("cPartnum", &(cPartnum[0]));
+    trCalo->SetBranchAddress("cParent", &(cParent[0]));
+
+    // Events loop begins here
+
+    for (int i=0; i<nEvents; i++){
+
+        trTracks->GetEvent(i);
+        trHits->GetEvent(i);
+        trCalo->GetEvent(i);
+
+        cout<<eventID<<" --- tot calo energy "<<cTotalEnergy<<endl;
 
         for(int j=0; j<nTracks; j++){
-            cout<< PDG[j] <<endl;
+            //do track stuff
+            // cout<<"track "<<j<<", PDG "<<tPDG[j]<<endl;
         }
+
+        for(int j=0; j<nHits; j++){
+            //do hits stuff
+            // cout<<"hit "<<j<<", trackID "<<hTrackID[j]<<endl;
+        }
+
+
+        for(int j=0; j<nParticles; j++){
+            //do calo stuff
+        }
+
     }
 
     return;
