@@ -1,3 +1,7 @@
+bool verbose = true;
+bool preselection = true;
+
+
 void testAnalisi(){
 
     TFile *f = new TFile("test.root");
@@ -16,9 +20,9 @@ void testAnalisi(){
     trCalo->SetBranchAddress("nParticles", &nParticles);
 
     int nEvents = trTracks->GetEntries();
-    int maxTracks = 0;
-    int maxHits = 0;
-    int maxParticles = 0;
+    int maxTracks = 200;
+    int maxHits = 1000;
+    int maxParticles = 5000;
 
     for (int i=0; i<nEvents; i++){
         trTracks->GetEvent(i);
@@ -49,15 +53,17 @@ void testAnalisi(){
     // Hits variables
 
     vector<int> hPDG, hTrackID;
-    vector<double> hEnergy;
+    vector<double> hEnergy, hKinEnergy;
 
     hPDG.resize(maxHits, 0);
     hTrackID.resize(maxHits, 0);
     hEnergy.resize(maxHits, 0);
+    hKinEnergy.resize(maxHits, 0);
 
     trHits->SetBranchAddress("PDG", &(hPDG[0]));
     trHits->SetBranchAddress("trackID", &(hTrackID[0]));
     trHits->SetBranchAddress("energy", &(hEnergy[0]));
+    trHits->SetBranchAddress("kinenergy", &(hKinEnergy[0]));
 
     // Calo variables
 
@@ -80,9 +86,14 @@ void testAnalisi(){
 
     // Define histograms
 
-    TH1F *h1 = new TH1F("h1", "totCaloE",   2000, 0, 1000);
-    TH1F *h2 = new TH1F("h2", "elossMu",    2000, 0, 1000);
-    TH1F *h3 = new TH1F("h3", "elossNotMu", 2000, 0, 1000);
+    TH1F *htot = new TH1F("htot", "totCaloE", 500, 0, 500);
+
+    TH1F *hCaloMu = new TH1F("hCaloMu", "eLossCaloMu", 500, 0, 500);
+    TH1F *hCaloNotMu = new TH1F("hCaloNotMu", "eCaloNotMu", 500, 0, 500);
+
+    TH1F *hHitsMu = new TH1F("hHitsMu", "eHitsMu", 500, 0, 1.5);
+    TH1F *hHitsNotMu = new TH1F("hHitsNotMu", "eHitsNotMu", 500, 0, 1.5);
+    TH1F *hHitsEle = new TH1F("hHitsEle", "eHitsEle", 500, 0, 1.5);
 
     // Events loop begins here
 
@@ -92,36 +103,82 @@ void testAnalisi(){
         trHits->GetEvent(i);
         trCalo->GetEvent(i);
 
-        h1->Fill(cTotalEnergy);
+        // Event Selection
 
-        for(int j=0; j<nTracks; j++){
-            //do track stuff
-            // cout<<"track "<<j<<", PDG "<<tPDG[j]<<endl;
+        if(preselection){
+
+            if(nTracks<2) continue;
+            bool skipEvt = true;
+            for (int j=0; j<nTracks; ++j) {
+                if (tPDG[j]==11 and tParentPDG[j]==13 and tKinEnergy[j]>1000) skipEvt = false;       
+            }
+            if(skipEvt) continue;
+
         }
 
-        for(int j=0; j<nHits; j++){
-            //do hits stuff
-            // cout<<"hit "<<j<<", trackID "<<hTrackID[j]<<endl;
+        if(verbose) cout<<endl<<" ----- "<<i<<endl;
+
+        if(verbose) cout<<" - TRACKS"<<endl;
+
+        for(int j=0; j<nTracks; ++j) if(verbose) cout<<tPDG[j]<<" "<<tKinEnergy[j]<<endl;
+
+        if(verbose) cout<<endl<<" - HITS"<<endl;
+
+        float ehits_Mu = 0;
+        float ehits_NotMu = 0;
+        float ehits_Ele = 0;
+
+        for(int j=0; j<nHits; ++j){
+            if(hPDG[j] == 13) ehits_Mu += hEnergy[j]; 
+            else{
+                ehits_NotMu += hEnergy[j];
+            }
+
+            if(hPDG[j] == 11) ehits_Ele += hEnergy[j]; 
+
+            if(verbose) cout<<hPDG[j]<<" "<<hEnergy[j]<<endl;
         }
 
-        float eLoss_Mu = 0;
-        float eLoss_NotMu = 0;
+        if(verbose) cout<<endl<<" - CALO"<<endl;
 
-        for(int j=0; j<nParticles; j++){
-            if(cPDG[j] == 13) eLoss_Mu += cEloss[j]; 
-                else eLoss_NotMu += cEloss[j];
+        hHitsMu->Fill(ehits_Mu);
+        hHitsNotMu->Fill(ehits_NotMu);
+        hHitsEle->Fill(ehits_Ele);
+
+        float eCalo_Mu = 0;
+        float eCalo_NotMu = 0;
+        int muCaloIndex = 0;
+
+        for(int j=0; j<nParticles; ++j){if(cPDG[j] == 13) muCaloIndex = cPartnum[j];}
+
+        for(int j=0; j<nParticles; ++j){
+            if(cPDG[j] == 13 || cParent[j] == muCaloIndex) 
+                eCalo_Mu += cEloss[j];
+            else eCalo_NotMu += cEloss[j];
+
+            if(verbose) cout<<cPDG[j]<<" "<<cEloss[j]<<endl;
         }
 
-        h2->Fill(eLoss_Mu);
-        h3->Fill(eLoss_NotMu);
+        htot->Fill(cTotalEnergy);
+        hCaloMu->Fill(eCalo_Mu);
+        hCaloNotMu->Fill(eCalo_NotMu);
 
     }
-    TCanvas *c1 = new TCanvas();
-    h1->Draw();
+
+
+//    TCanvas *c1 = new TCanvas();
+//    htot->Draw();
     TCanvas *c2 = new TCanvas();
-    h2->Draw();
+    hCaloMu->Draw();
     TCanvas *c3 = new TCanvas();
-    h3->Draw();
+    hCaloNotMu->Draw();
+
+    TCanvas *c4 = new TCanvas();
+    hHitsMu->Draw();
+    TCanvas *c5 = new TCanvas();
+    hHitsNotMu->Draw();
+    TCanvas *c6 = new TCanvas();
+    hHitsEle->Draw();
 
     return;
 
