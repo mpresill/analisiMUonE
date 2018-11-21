@@ -1,4 +1,4 @@
-bool verbose = true;
+bool verbose = false;
 bool preselection = true;
 
 
@@ -91,13 +91,13 @@ void testAnalisi(){
     TH1F *hCaloMu = new TH1F("hCaloMu", "eCaloMu", 500, 0, 500);
     TH1F *hCaloNotMu = new TH1F("hCaloNotMu", "eCaloNotMu", 500, 0, 500);
 
-    TH1F *hHitsMu = new TH1F("hHitsMu", "eHitsMu", 500, 0, 2);
-    TH1F *hHitsNotMu = new TH1F("hHitsNotMu", "eHitsNotMu", 500, 0, 2);
-    TH1F *hHitsEle = new TH1F("hHitsEle", "eHitsEle", 500, 0, 2);
+    TH1F *hHitsMu = new TH1F("hHitsMu", "eHitsMu", 500, 0, 5);
+    TH1F *hHitsNotMu = new TH1F("hHitsNotMu", "eHitsNotMu", 500, 0, 5);
+    TH1F *hHitsEle = new TH1F("hHitsEle", "eHitsEle", 500, 0, 5);
 
     // Events loop begins here
 
-    for (int i=0; i<10000; i++){
+    for (int i=0; i<nEvents; i++){
 
         trTracks->GetEvent(i);
         trHits->GetEvent(i);
@@ -139,11 +139,11 @@ void testAnalisi(){
             if(verbose) cout<<hPDG[j]<<" "<<hEnergy[j]<<endl;
         }
 
-        if(verbose) cout<<endl<<" - CALO"<<endl;
-
         hHitsMu->Fill(ehits_Mu);
         hHitsNotMu->Fill(ehits_NotMu);
         hHitsEle->Fill(ehits_Ele);
+
+        if(verbose) cout<<endl<<" - CALO"<<endl;
 
         float eCalo_Mu = 0;
         float eCalo_NotMu = 0;
