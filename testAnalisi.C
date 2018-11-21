@@ -4,11 +4,11 @@ bool preselection = true;
 
 void testAnalisi(){
 
-    TFile *f = new TFile("test.root");
+    TFile *f = new TFile("1Mdefault.root");
 
     TTree *trTracks  = (TTree*)f->Get("tracks");
     TTree *trHits    = (TTree*)f->Get("hits");
-    TTree *trCalo    =  (TTree*)f->Get("calo");
+    TTree *trCalo    = (TTree*)f->Get("calo");
 
 
     // Get n events, max tracks/hits/calo
@@ -88,16 +88,16 @@ void testAnalisi(){
 
     TH1F *htot = new TH1F("htot", "totCaloE", 500, 0, 500);
 
-    TH1F *hCaloMu = new TH1F("hCaloMu", "eLossCaloMu", 500, 0, 500);
+    TH1F *hCaloMu = new TH1F("hCaloMu", "eCaloMu", 500, 0, 500);
     TH1F *hCaloNotMu = new TH1F("hCaloNotMu", "eCaloNotMu", 500, 0, 500);
 
-    TH1F *hHitsMu = new TH1F("hHitsMu", "eHitsMu", 500, 0, 1.5);
-    TH1F *hHitsNotMu = new TH1F("hHitsNotMu", "eHitsNotMu", 500, 0, 1.5);
-    TH1F *hHitsEle = new TH1F("hHitsEle", "eHitsEle", 500, 0, 1.5);
+    TH1F *hHitsMu = new TH1F("hHitsMu", "eHitsMu", 500, 0, 2);
+    TH1F *hHitsNotMu = new TH1F("hHitsNotMu", "eHitsNotMu", 500, 0, 2);
+    TH1F *hHitsEle = new TH1F("hHitsEle", "eHitsEle", 500, 0, 2);
 
     // Events loop begins here
 
-    for (int i=0; i<nEvents; i++){
+    for (int i=0; i<10000; i++){
 
         trTracks->GetEvent(i);
         trHits->GetEvent(i);
@@ -110,7 +110,7 @@ void testAnalisi(){
             if(nTracks<2) continue;
             bool skipEvt = true;
             for (int j=0; j<nTracks; ++j) {
-                if (tPDG[j]==11 and tParentPDG[j]==13 and tKinEnergy[j]>1000) skipEvt = false;       
+                if (tPDG[j]==11 and tParentPDG[j]==13 and tKinEnergy[j]>1) skipEvt = false;       
             }
             if(skipEvt) continue;
 
@@ -172,13 +172,23 @@ void testAnalisi(){
     hCaloMu->Draw();
     TCanvas *c3 = new TCanvas();
     hCaloNotMu->Draw();
-
     TCanvas *c4 = new TCanvas();
     hHitsMu->Draw();
     TCanvas *c5 = new TCanvas();
     hHitsNotMu->Draw();
     TCanvas *c6 = new TCanvas();
     hHitsEle->Draw();
+
+    TFile *MyFile = new TFile("out.root","RECREATE");
+
+    hCaloMu->Write();
+    hCaloNotMu->Write();
+    hHitsMu->Write();
+    hHitsNotMu->Write();
+    hHitsEle->Write();
+
+    MyFile->Write();
+    MyFile->Close();
 
     return;
 
